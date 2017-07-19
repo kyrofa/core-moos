@@ -148,58 +148,67 @@ add_subdirectory(Core)
 # Config Script Creation
 #########################
 
-# Add your library's name to PROJECT_EXPORT_LIBS if you wish to have it exported
-# (This is a CACHE INTERNAL variable)
-option(ENABLE_EXPORT "do you want CMake to record this build so other projects can find it " ON)
-if(ENABLE_EXPORT)
-   message(STATUS "location of this build will be exported, set ENABLE_EXPORT to OFF if you don't want this and delete ~/.cmake/projects/MOOS ")
-endif()
+# Provide a cmake config script for the build directory
+export(
+    TARGETS MOOS
+    NAMESPACE MOOS::
+    FILE UseMOOS.cmake
+)
 
-if(1)
-    if (PROJECT_EXPORT_LIBS)
-        
-        message(STATUS "PROJECT_EXPORT_LIBS = ${PROJECT_EXPORT_LIBS}")
-        
-        # Provide a cmake config script for the build directory
-        export(TARGETS
-            ${PROJECT_EXPORT_LIBS}
-            FILE
-            Use${PROJECTNAME}.cmake
-        )
-    
-        set(CONFIG_FILE "${PROJECT_BINARY_DIR}/${PROJECTNAME}Config.cmake")
-        configure_file( "cmake/ProjectConfig.cmake.in" ${CONFIG_FILE} @ONLY )
-        
-        # Append libary specific lines to the generated config script
-        foreach(EXPORT_LIB ${PROJECT_EXPORT_LIBS})
-            file(APPEND ${CONFIG_FILE} "\n# Export variables for ${EXPORT_LIB} Library\n")
-            file(APPEND ${CONFIG_FILE} "set(${EXPORT_LIB}_LIBRARIES \"${${EXPORT_LIB}_LIBRARIES}\")\n")
-            file(APPEND ${CONFIG_FILE} "set(${EXPORT_LIB}_INCLUDE_DIRS \"${${EXPORT_LIB}_INCLUDE_DIRS}\")\n")
-            file(APPEND ${CONFIG_FILE} "set(${EXPORT_LIB}_DEPEND_LIBRARIES \"${${EXPORT_LIB}_DEPEND_LIBRARIES}\")\n")
-            file(APPEND ${CONFIG_FILE} "set(${EXPORT_LIB}_DEPEND_INCLUDE_DIRS \"${${EXPORT_LIB}_DEPEND_INCLUDE_DIRS}\")\n")
-        endforeach()
-        
-        foreach(DEFINE ${PROJECT_EXPORT_DEFINES})        
-            file(APPEND ${CONFIG_FILE} "ADD_DEFINITIONS(-D${DEFINE})\n")        
-            file(APPEND ${CONFIG_FILE}  "message(STATUS \"adding -D${DEFINE} as required my MOOS\")" )
-        endforeach()
-        
-        
-    endif()
+# Support existing projects that expect to find MOOS_LIBRARIES and
+# MOOS_INCLUDE_DIRS variables.
+set(MOOS_LIBRARIES MOOS::MOOS)
 
-	if(ENABLE_EXPORT)
-		# Stick build location in the central CMake user package registry, so that it may be easily found
-		if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.7)
-		  export(PACKAGE ${PROJECTNAME})
-		endif()
-	endif()
+# Generate the config file for other projects to find the MOOS build dir
+set(CONFIG_FILE "${PROJECT_BINARY_DIR}/MOOSConfig.cmake")
+configure_file(
+    "cmake/ProjectConfig.cmake.in"
+    "${CONFIG_FILE}"
+    @ONLY
+)
 
-endif()
 
 #here we save a version file
 set(VERSION_FILE "${PROJECT_BINARY_DIR}/${PROJECTNAME}ConfigVersion.cmake")
 configure_file( "cmake/ProjectConfigVersion.cmake.in" ${VERSION_FILE} @ONLY )
 
+#########################
+# Install target
+#########################
 
+# Provide a cmake config script for the install directory
+set(PROJECT_CONFIG_PATH "lib/cmake/MOOS")
+install(
+    EXPORT MOOS
+    NAMESPACE MOOS::
+    FILE UseMOOS.cmake
+    DESTINATION ${PROJECT_CONFIG_PATH}
+)
 
+# Headers are all combined into one common 'include' dir when MOOS is installed.
+# This path needs to be relative to the package config file itself.
+set(MOOS_INCLUDE_DIRS "\${CMAKE_CURRENT_LIST_DIR}/../../../include")
+set(CONFIG_FILE "${PROJECT_BINARY_DIR}/MOOSInstallConfig.cmake")
+configure_file( "cmake/ProjectConfig.cmake.in" ${CONFIG_FILE} @ONLY )
+install(
+    FILES "${CONFIG_FILE}"
+    RENAME MOOSConfig.cmake
+    DESTINATION "${PROJECT_CONFIG_PATH}"
+)
 
+# Save a version file in the project's install directory
+install(FILES ${VERSION_FILE} DESTINATION "${PROJECT_CONFIG_PATH}")
+
+#########################
+
+option(ENABLE_EXPORT
+  "Cause CMake to record this build so other projects can find it " ON)
+if(ENABLE_EXPORT)
+    # Stick build location in the central CMake user package registry, so that
+    # it may be easily found.
+    message(STATUS "Location of this build will be exported. "
+        "Set ENABLE_EXPORT to OFF if you don't want this and "
+        "delete ~/.cmake/projects/MOOS "
+    )
+    export(PACKAGE MOOS)
+endif()

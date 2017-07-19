@@ -2,7 +2,7 @@
 
 # Pick up the auto-generated file which knows how to add the library targets
 # This will mean that we don't have to supply full paths for the libraries
-set(exports_file "@CMAKE_CURRENT_BINARY_DIR@/Use@PROJECTNAME@.cmake")
+set(exports_file "${CMAKE_CURRENT_LIST_DIR}/Use@PROJECTNAME@.cmake")
 
 if( NOT MOOS_FOUND)
     #only pull in if not already done!
@@ -17,5 +17,9 @@ include( FindPackageHandleStandardArgs )
 find_package_handle_standard_args( @PROJECTNAME@ DEFAULT_MSG exports_file )
 message(STATUS "MOOS_FOUND=${MOOS_FOUND} time to dance")
 
-
-# Project specific variables are dynamically inserted here
+# Support existing projects that expect to find MOOS_LIBRARIES and
+# MOOS_INCLUDE_DIRS variables.
+# MOOS_INCLUDE_DIRS is no longer needed, as CMake brings
+# in necessary include dirs automatically through the 'MOOS::MOOS' target.
+set(MOOS_LIBRARIES @MOOS_LIBRARIES@)
+set(MOOS_INCLUDE_DIRS "@MOOS_INCLUDE_DIRS@")
