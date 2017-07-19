@@ -200,6 +200,40 @@ endif()
 set(VERSION_FILE "${PROJECT_BINARY_DIR}/${PROJECTNAME}ConfigVersion.cmake")
 configure_file( "cmake/ProjectConfigVersion.cmake.in" ${VERSION_FILE} @ONLY )
 
+#########################
+# Install target
+#########################
 
+# Provide a cmake config script for the install directory
+set(PROJECT_CONFIG_PATH "lib/cmake/MOOS")
+install(
+    EXPORT ${PROJECT_EXPORT_LIBS}
+    FILE Use${PROJECTNAME}.cmake
+    DESTINATION ${PROJECT_CONFIG_PATH}
+)
 
+# Headers are all combined into one common 'include' dir when MOOS is installed.
+# This path needs to be relative to the package config file itself.
+set(MOOS_INCLUDE_DIRS "\${CMAKE_CURRENT_LIST_DIR}/../../../include")
+set(CONFIG_FILE "${PROJECT_BINARY_DIR}/MOOSInstallConfig.cmake")
+configure_file("cmake/ProjectConfig.cmake.in" ${CONFIG_FILE} @ONLY)
+# Append libary specific lines to the generated config script
+foreach(EXPORT_LIB ${PROJECT_EXPORT_LIBS})
+  file(APPEND ${CONFIG_FILE} "\n# Export variables for ${EXPORT_LIB} Library\n")
+  file(APPEND ${CONFIG_FILE} "set(${EXPORT_LIB}_LIBRARIES \"${${EXPORT_LIB}_LIBRARIES}\")\n")
+  file(APPEND ${CONFIG_FILE} "set(${EXPORT_LIB}_INCLUDE_DIRS \"${${EXPORT_LIB}_INCLUDE_DIRS}\")\n")
+  file(APPEND ${CONFIG_FILE} "set(${EXPORT_LIB}_DEPEND_LIBRARIES \"${${EXPORT_LIB}_DEPEND_LIBRARIES}\")\n")
+endforeach()
 
+foreach(DEFINE ${PROJECT_EXPORT_DEFINES})
+  file(APPEND ${CONFIG_FILE} "ADD_DEFINITIONS(-D${DEFINE})\n")
+  file(APPEND ${CONFIG_FILE}  "message(STATUS \"adding -D${DEFINE} as required by MOOS\")" )
+endforeach()
+install(
+    FILES "${CONFIG_FILE}"
+    RENAME ${PROJECTNAME}Config.cmake
+    DESTINATION "${PROJECT_CONFIG_PATH}"
+)
+
+# Save a version file in the project's install directory
+install(FILES ${VERSION_FILE} DESTINATION "${PROJECT_CONFIG_PATH}")
