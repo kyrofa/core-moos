@@ -233,7 +233,9 @@ cache_internal_append_unique(PROJECT_EXPORT_LIBS
 # This is boilerplate.  Any extra libs you want to link should be in the '..._DEPEND_...'
 # variables
 include_directories(${${LIBNAME}_INCLUDE_DIRS} ${${LIBNAME}_DEPEND_INCLUDE_DIRS})
-add_library(${LIBNAME} STATIC ${SOURCES} ${PUBLIC_HEADERS})
+add_library(${LIBNAME}_static STATIC ${SOURCES} ${PUBLIC_HEADERS})
+add_library(${LIBNAME} SHARED ${SOURCES} ${PUBLIC_HEADERS})
+target_link_libraries(${LIBNAME}_static ${${LIBNAME}_DEPEND_LIBRARIES})
 target_link_libraries(${LIBNAME} ${${LIBNAME}_DEPEND_LIBRARIES})
 
 
@@ -245,7 +247,7 @@ install(DIRECTORY ${INCLUDE_ROOTS} DESTINATION ${CMAKE_INSTALL_PREFIX} FILES_MAT
 
 
 # install libraries
-INSTALL(TARGETS ${LIBNAME}
+INSTALL(TARGETS ${LIBNAME}_static ${LIBNAME}
   EXPORT MOOS
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
